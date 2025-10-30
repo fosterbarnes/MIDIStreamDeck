@@ -1,0 +1,29 @@
+<UserControl x:Class="MIDIStreamDeck.AnalogStick"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MIDIStreamDeck"
+             mc:Ignorable="d" 
+             d:DesignHeight="100" d:DesignWidth="100"
+             Background="Transparent"
+             Cursor="Hand">
+    <Grid>
+        <!-- Design-time preview image (visible only in designer) -->
+        <Image Source="/svg/AnalogStick.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform"/>
+        
+        <Canvas x:Name="AnalogStickCanvas" 
+                Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                Background="Transparent"
+                MouseLeftButtonDown="AnalogStickCanvas_MouseLeftButtonDown"
+                MouseLeftButtonUp="AnalogStickCanvas_MouseLeftButtonUp"
+                MouseMove="AnalogStickCanvas_MouseMove"
+                MouseLeave="AnalogStickCanvas_MouseLeave">
+            <Canvas.RenderTransform>
+                <TranslateTransform x:Name="AnalogStickTranslate" X="0" Y="0"/>
+            </Canvas.RenderTransform>
+        </Canvas>
+    </Grid>
+</UserControl>
+

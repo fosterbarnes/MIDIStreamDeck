@@ -18,73 +18,81 @@ namespace MIDIStreamDeck
     /// </summary>
     public partial class MainWindow : Window
     {
+        // Color palette - using Color.FromRgb for better performance
+        private readonly SolidColorBrush colorWhite = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+        private readonly SolidColorBrush colorGreen = new SolidColorBrush(Color.FromRgb(50, 255, 50));
+        private readonly SolidColorBrush colorRed = new SolidColorBrush(Color.FromRgb(255, 50, 50));
+        private readonly SolidColorBrush colorRedLight1 = new SolidColorBrush(Color.FromRgb(255, 91, 91));
+        private readonly SolidColorBrush colorRedLight2 = new SolidColorBrush(Color.FromRgb(255, 132, 132));
+        private readonly SolidColorBrush colorRedLight3 = new SolidColorBrush(Color.FromRgb(255, 173, 173));
+        private readonly SolidColorBrush colorBlueLight = new SolidColorBrush(Color.FromRgb(100, 200, 255));
+        private readonly SolidColorBrush colorBlueMedium = new SolidColorBrush(Color.FromRgb(50, 150, 255));
+        
+        // SVG path caching for keyboard keys and color restoration
         private Dictionary<string, System.Windows.Shapes.Path> svgPaths = new Dictionary<string, System.Windows.Shapes.Path>();
         private Dictionary<string, Brush> originalColors = new Dictionary<string, Brush>();
         private Dictionary<Button, System.Windows.Shapes.Path> padOuterPaths = new Dictionary<Button, System.Windows.Shapes.Path>();
-        private readonly SolidColorBrush hoverColorWhite = new SolidColorBrush(Color.FromRgb(100, 200, 255)); // Light blue for white keys
-        private readonly SolidColorBrush hoverColorBlack = new SolidColorBrush(Color.FromRgb(50, 150, 255)); // Darker blue for black keys
-        private readonly SolidColorBrush hoverColorPadOuter = new SolidColorBrush(Color.FromRgb(255, 50, 50)); // Red for pad outer
         
-        // Bank button state tracking
+        // Hover colors for different button types
+        private readonly SolidColorBrush hoverColorWhite;
+        private readonly SolidColorBrush hoverColorBlack;
+        private readonly SolidColorBrush hoverColorPadOuter;
+        
+        // Bank button state (toggles between A and B)
         private System.Windows.Shapes.Path? bankButtonOuterPath = null;
-        private bool isBankButtonStateB = false; // false = A (green), true = B (red)
-        private readonly SolidColorBrush bankButtonGreen = new SolidColorBrush(Color.FromRgb(50, 255, 50)); // Green for state A
-        private readonly SolidColorBrush bankButtonRed = new SolidColorBrush(Color.FromRgb(255, 50, 50)); // Red for state B
+        private System.Windows.Shapes.Path? bankATextPath = null;
+        private System.Windows.Shapes.Path? bankBTextPath = null;
+        private bool isBankStateB = false;
+        private readonly SolidColorBrush bankButtonGreen;
+        private readonly SolidColorBrush bankButtonRed;
         
-        // Octave button state tracking
+        // Octave tracking (0-8 range, displayed via color gradient)
         private System.Windows.Shapes.Path? octaveDownButtonOuterPath = null;
         private System.Windows.Shapes.Path? octaveUpButtonOuterPath = null;
-        private int currentOctave = 4; // Default to middle octave (0-8 range)
-        private readonly SolidColorBrush octaveButtonDefault = new SolidColorBrush(Color.FromRgb(100, 100, 255)); // Blue default
+        private System.Windows.Shapes.Path? octaveDownButtonTextPath = null;
+        private System.Windows.Shapes.Path? octaveUpButtonTextPath = null;
+        private int currentOctave = 4;
         
         public MainWindow()
         {
+            hoverColorWhite = colorBlueLight;
+            hoverColorBlack = colorBlueMedium;
+            hoverColorPadOuter = colorRed;
+            bankButtonGreen = colorGreen;
+            bankButtonRed = colorRed;
+            
             InitializeComponent();
-            
-            // Helper: Click anywhere to see coordinates in the title bar
-            this.MouseDown += Window_MouseDown;
-            
-            // Set up aspect ratio locking via source initialization
-            this.SourceInitialized += (s, e) =>
-            {
-                var hwndSource = PresentationSource.FromVisual(this) as System.Windows.Interop.HwndSource;
-                hwndSource?.AddHook(WndProc);
-            };
-            
-            // Wait for SVG to load, then wire up events
-            this.Loaded += MainWindow_Loaded;
+            MouseDown += Window_MouseDown;
+            SourceInitialized += (s, e) => (PresentationSource.FromVisual(this) as System.Windows.Interop.HwndSource)?.AddHook(WndProc);
+            Loaded += MainWindow_Loaded;
         }
         
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Load and render SVG manually
             LoadSvgPaths();
             LoadPadSvgs();
-            LoadBankButton();
+            LoadBank();
             LoadOctaveButtons();
+            LoadAnalogStickBoundary();
             
-            // Wire up keyboard key button events
             WireKeyButtonEvents();
             WirePadButtonEvents();
-            WireBankButtonEvents();
+            WireBankEvents();
             WireOctaveButtonEvents();
-            
-            // Wire up knob events
             WireKnobEvents();
+            WireAnalogStickEvents();
         }
         
+        /// <summary>
+        /// Loads the keyboard SVG file and parses individual path elements for each key.
+        /// Each path is cached for hover effects and color restoration.
+        /// </summary>
         private void LoadSvgPaths()
         {
             try
             {
-                // Load SVG from embedded resource
                 var resourceUri = new Uri("pack://application:,,,/svg/KeysCombined.svg");
-                var resourceStream = Application.GetResourceStream(resourceUri);
-                
-                if (resourceStream == null)
-                {
-                    throw new Exception("Could not load KeysCombined.svg from resources");
-                }
+                var resourceStream = Application.GetResourceStream(resourceUri) ?? throw new Exception("Could not load KeysCombined.svg");
                 
                 XmlDocument doc = new XmlDocument();
                 doc.Load(resourceStream.Stream);
@@ -92,22 +100,17 @@ namespace MIDIStreamDeck
                 XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
                 nsmgr.AddNamespace("svg", "http://www.w3.org/2000/svg");
                 
-                // Get viewBox to calculate scale
+                // Parse viewBox to calculate scale factors for our canvas size (990x275)
                 var svgElement = doc.DocumentElement;
-                string viewBox = svgElement?.GetAttribute("viewBox") ?? "";
-                var viewBoxParts = viewBox.Split(' ');
+                var viewBoxParts = (svgElement?.GetAttribute("viewBox") ?? "").Split(' ');
                 double svgWidth = double.Parse(viewBoxParts[2]);
                 double svgHeight = double.Parse(viewBoxParts[3]);
-                
-                // Calculate scale to fit our canvas (990x275)
                 double scaleX = 990.0 / svgWidth;
                 double scaleY = 275.0 / svgHeight;
                 
                 System.Diagnostics.Debug.WriteLine($"SVG ViewBox: {svgWidth}x{svgHeight}, Scale: {scaleX}x{scaleY}");
                 
-                // Find all path elements
-                XmlNodeList? pathNodes = doc.SelectNodes("//svg:path", nsmgr);
-                
+                var pathNodes = doc.SelectNodes("//svg:path", nsmgr);
                 System.Diagnostics.Debug.WriteLine($"Found {pathNodes?.Count ?? 0} path elements in SVG");
                 
                 if (pathNodes != null)
@@ -116,67 +119,43 @@ namespace MIDIStreamDeck
                     {
                         string id = pathNode.Attributes?["id"]?.Value ?? "";
                         string d = pathNode.Attributes?["d"]?.Value ?? "";
-                        string fill = pathNode.Attributes?["style"]?.Value?.Split(';')
-                            .FirstOrDefault(s => s.Trim().StartsWith("fill:"))
-                            ?.Split(':')[1]?.Trim() ?? "#ffffff";
+                        if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(d)) continue;
                         
-                        if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(d))
+                        // Extract fill color from style attribute
+                        string fill = pathNode.Attributes?["style"]?.Value?.Split(';')
+                            .FirstOrDefault(s => s.Trim().StartsWith("fill:"))?.Split(':')[1]?.Trim() ?? "#ffffff";
+                        
+                        // Parse and apply SVG transforms (translate from parent group or path itself)
+                        var transformGroup = new TransformGroup();
+                        string? transformStr = pathNode.ParentNode?.Attributes?["transform"]?.Value ?? pathNode.Attributes?["transform"]?.Value;
+                        
+                        if (!string.IsNullOrEmpty(transformStr) && transformStr.Contains("translate"))
                         {
-                            // Create WPF Path element
-                            var path = new System.Windows.Shapes.Path
+                            var match = System.Text.RegularExpressions.Regex.Match(transformStr, @"translate\(([^,]+),([^)]+)\)");
+                            if (match.Success)
                             {
-                                Data = Geometry.Parse(d),
-                                Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fill)),
-                                Stroke = Brushes.Transparent,
-                                StrokeThickness = 0
-                            };
-                            
-                            // Apply transform (group transform from SVG)
-                            var transformGroup = new TransformGroup();
-                            
-                            // Check if path is in a group with transform
-                            var parentNode = pathNode.ParentNode;
-                            string? transformStr = null;
-                            
-                            // Check parent node for transform
-                            if (parentNode?.Attributes?["transform"] != null)
-                            {
-                                transformStr = parentNode.Attributes["transform"]!.Value;
+                                double tx = double.Parse(match.Groups[1].Value.Trim());
+                                double ty = double.Parse(match.Groups[2].Value.Trim());
+                                transformGroup.Children.Add(new TranslateTransform(tx, ty));
                             }
-                            // Also check path itself for transform
-                            else if (pathNode.Attributes?["transform"] != null)
-                            {
-                                transformStr = pathNode.Attributes["transform"]!.Value;
-                            }
-                            
-                            if (!string.IsNullOrEmpty(transformStr))
-                            {
-                                // Parse translate(136.08405,-82.109032)
-                                if (transformStr.Contains("translate"))
-                                {
-                                    var match = System.Text.RegularExpressions.Regex.Match(transformStr, @"translate\(([^,]+),([^)]+)\)");
-                                    if (match.Success)
-                                    {
-                                        double tx = double.Parse(match.Groups[1].Value.Trim());
-                                        double ty = double.Parse(match.Groups[2].Value.Trim());
-                                        transformGroup.Children.Add(new TranslateTransform(tx, ty));
-                                    }
-                                }
-                            }
-                            
-                            // Apply scale
-                            transformGroup.Children.Add(new ScaleTransform(scaleX, scaleY));
-                            path.RenderTransform = transformGroup;
-                            
-                            // Add to canvas
-                            KeyboardSvgCanvas.Children.Add(path);
-                            
-                            // Cache the path
-                            svgPaths[id] = path;
-                            originalColors[id] = path.Fill.Clone();
-                            
-                            System.Diagnostics.Debug.WriteLine($"Loaded path: {id}, Fill: {fill}");
                         }
+                        
+                        transformGroup.Children.Add(new ScaleTransform(scaleX, scaleY));
+                        
+                        var path = new System.Windows.Shapes.Path
+                        {
+                            Data = Geometry.Parse(d),
+                            Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fill)),
+                            Stroke = Brushes.Transparent,
+                            StrokeThickness = 0,
+                            RenderTransform = transformGroup
+                        };
+                        
+                        KeyboardSvgCanvas.Children.Add(path);
+                        svgPaths[id] = path;
+                        originalColors[id] = path.Fill.Clone();
+                        
+                        System.Diagnostics.Debug.WriteLine($"Loaded path: {id}, Fill: {fill}");
                     }
                 }
                 
@@ -193,15 +172,10 @@ namespace MIDIStreamDeck
         {
             try
             {
-                // Load pad buttons
-                Button[] padButtons = { Pad1, Pad2, Pad3, Pad4, Pad5, Pad6, Pad7, Pad8 };
+                foreach (var padButton in new[] { Pad1, Pad2, Pad3, Pad4, Pad5, Pad6, Pad7, Pad8 })
+                    LoadSvgForButton(padButton, "PadFull.svg", $"pad_{padButton.Name}_outer");
                 
-                foreach (var padButton in padButtons)
-                {
-                    LoadPadSvgForButton(padButton);
-                }
-                
-                System.Diagnostics.Debug.WriteLine($"Successfully loaded {padButtons.Length} pad SVGs");
+                System.Diagnostics.Debug.WriteLine($"Successfully loaded 8 pad SVGs");
             }
             catch (Exception ex)
             {
@@ -210,18 +184,17 @@ namespace MIDIStreamDeck
             }
         }
         
-        private void LoadBankButton()
+        private void LoadBank()
         {
             try
             {
-                LoadButtonSvgForButton(BankButton, "Button.svg");
-                
-                // Set initial green color for Bank button
-                if (padOuterPaths.TryGetValue(BankButton, out var outerPath))
+                LoadSvgForButton(Bank, "Button.svg", $"button_{Bank.Name}_outer");
+                if (padOuterPaths.TryGetValue(Bank, out var outerPath))
                 {
                     bankButtonOuterPath = outerPath;
                     bankButtonOuterPath.Fill = bankButtonGreen;
                 }
+                if (bankATextPath != null) bankATextPath.Fill = bankButtonGreen;
                 
                 System.Diagnostics.Debug.WriteLine($"Successfully loaded Bank button SVG");
             }
@@ -236,22 +209,15 @@ namespace MIDIStreamDeck
         {
             try
             {
-                LoadButtonSvgForButton(OctaveDownButton, "Button.svg");
-                LoadButtonSvgForButton(OctaveUpButton, "Button.svg");
+                LoadSvgForButton(OctaveDown, "Button.svg", $"button_{OctaveDown.Name}_outer");
+                LoadSvgForButton(OctaveUp, "Button.svg", $"button_{OctaveUp.Name}_outer");
                 
-                // Cache the outer paths and set initial colors
-                if (padOuterPaths.TryGetValue(OctaveDownButton, out var downPath))
-                {
+                if (padOuterPaths.TryGetValue(OctaveDown, out var downPath))
                     octaveDownButtonOuterPath = downPath;
-                }
-                
-                if (padOuterPaths.TryGetValue(OctaveUpButton, out var upPath))
-                {
+                if (padOuterPaths.TryGetValue(OctaveUp, out var upPath))
                     octaveUpButtonOuterPath = upPath;
-                }
                 
                 UpdateOctaveButtonColors();
-                
                 System.Diagnostics.Debug.WriteLine($"Successfully loaded Octave buttons SVG");
             }
             catch (Exception ex)
@@ -261,142 +227,101 @@ namespace MIDIStreamDeck
             }
         }
         
-        private void LoadPadSvgForButton(Button padButton)
+        private void LoadAnalogStickBoundary()
         {
-            // Load SVG from embedded resource
-            var resourceUri = new Uri("pack://application:,,,/svg/PadFull.svg");
-            var resourceStream = Application.GetResourceStream(resourceUri);
-            
-            if (resourceStream == null)
+            try
             {
-                throw new Exception("Could not load PadFull.svg from resources");
-            }
-            
-            XmlDocument doc = new XmlDocument();
-            doc.Load(resourceStream.Stream);
-            
-            XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
-            nsmgr.AddNamespace("svg", "http://www.w3.org/2000/svg");
-            
-            // Get viewBox to calculate scale
-            var svgElement = doc.DocumentElement;
-            string viewBox = svgElement?.GetAttribute("viewBox") ?? "";
-            var viewBoxParts = viewBox.Split(' ');
-            double svgWidth = double.Parse(viewBoxParts[2]);
-            double svgHeight = double.Parse(viewBoxParts[3]);
-            
-            // Get button size
-            double buttonWidth = padButton.Width;
-            double buttonHeight = padButton.Height;
-            
-            // Calculate scale
-            double scaleX = buttonWidth / svgWidth;
-            double scaleY = buttonHeight / svgHeight;
-            double scale = Math.Min(scaleX, scaleY); // Use uniform scale
-            
-            // Find all path elements
-            XmlNodeList? pathNodes = doc.SelectNodes("//svg:path", nsmgr);
-            
-            if (pathNodes != null)
-            {
-                // Clear existing content
-                padButton.Content = null;
+                var resourceUri = new Uri("pack://application:,,,/svg/Circle.svg");
+                var resourceStream = Application.GetResourceStream(resourceUri) ?? throw new Exception("Could not load Circle.svg");
                 
-                // Create a canvas to hold the paths
-                Canvas padCanvas = new Canvas
+                XmlDocument doc = new XmlDocument();
+                using (var reader = System.Xml.XmlReader.Create(resourceStream.Stream, new System.Xml.XmlReaderSettings
                 {
-                    Width = buttonWidth,
-                    Height = buttonHeight,
-                    Background = Brushes.Transparent
-                };
+                    DtdProcessing = System.Xml.DtdProcessing.Ignore,
+                    XmlResolver = null
+                }))
+                {
+                    doc.Load(reader);
+                }
                 
-                foreach (XmlNode pathNode in pathNodes)
+                XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+                nsmgr.AddNamespace("svg", "http://www.w3.org/2000/svg");
+                
+                var svgElement = doc.DocumentElement;
+                var viewBoxParts = (svgElement?.GetAttribute("viewBox") ?? "").Split(' ');
+                double svgWidth = double.Parse(viewBoxParts[2]);
+                double svgHeight = double.Parse(viewBoxParts[3]);
+                double scale = Math.Min(90.0 / svgWidth, 90.0 / svgHeight);
+                
+                var pathNodes = doc.SelectNodes("//svg:path", nsmgr);
+                if (pathNodes != null)
                 {
-                    string id = pathNode.Attributes?["id"]?.Value ?? "";
-                    string d = pathNode.Attributes?["d"]?.Value ?? "";
-                    string fill = pathNode.Attributes?["style"]?.Value?.Split(';')
-                        .FirstOrDefault(s => s.Trim().StartsWith("fill:"))
-                        ?.Split(':')[1]?.Trim() ?? "#ffffff";
-                    
-                    if (!string.IsNullOrEmpty(d))
+                    foreach (XmlNode pathNode in pathNodes)
                     {
-                        // Create WPF Path element
+                        string d = pathNode.Attributes?["d"]?.Value ?? "";
+                        if (string.IsNullOrEmpty(d)) continue;
+                        
+                        string fill = pathNode.Attributes?["style"]?.Value?.Split(';')
+                            .FirstOrDefault(s => s.Trim().StartsWith("fill:"))?.Split(':')[1]?.Trim() ?? "#ffffff";
+                        
+                        var transformGroup = CreateSvgTransformForCanvas(pathNode, scale, svgWidth, svgHeight, 90.0, 90.0);
+                        
                         var path = new System.Windows.Shapes.Path
                         {
                             Data = Geometry.Parse(d),
                             Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fill)),
                             Stroke = Brushes.Transparent,
-                            StrokeThickness = 0
+                            StrokeThickness = 0,
+                            RenderTransform = transformGroup
                         };
                         
-                        // Apply transform
-                        var transformGroup = new TransformGroup();
-                        
-                        // Check if path is in a group with transform
-                        var parentNode = pathNode.ParentNode;
-                        string? transformStr = null;
-                        
-                        if (parentNode?.Attributes?["transform"] != null)
-                        {
-                            transformStr = parentNode.Attributes["transform"]!.Value;
-                        }
-                        else if (pathNode.Attributes?["transform"] != null)
-                        {
-                            transformStr = pathNode.Attributes["transform"]!.Value;
-                        }
-                        
-                        if (!string.IsNullOrEmpty(transformStr))
-                        {
-                            if (transformStr.Contains("translate"))
-                            {
-                                var match = System.Text.RegularExpressions.Regex.Match(transformStr, @"translate\(([^,]+),([^)]+)\)");
-                                if (match.Success)
-                                {
-                                    double tx = double.Parse(match.Groups[1].Value.Trim());
-                                    double ty = double.Parse(match.Groups[2].Value.Trim());
-                                    transformGroup.Children.Add(new TranslateTransform(tx, ty));
-                                }
-                            }
-                        }
-                        
-                        // Apply scale and center
-                        transformGroup.Children.Add(new ScaleTransform(scale, scale));
-                        
-                        // Center the scaled content
-                        double scaledWidth = svgWidth * scale;
-                        double scaledHeight = svgHeight * scale;
-                        double offsetX = (buttonWidth - scaledWidth) / 2;
-                        double offsetY = (buttonHeight - scaledHeight) / 2;
-                        transformGroup.Children.Add(new TranslateTransform(offsetX, offsetY));
-                        
-                        path.RenderTransform = transformGroup;
-                        
-                        // Add to canvas
-                        padCanvas.Children.Add(path);
-                        
-                        // Cache the outer path for hover effect
-                        if (id == "outer")
-                        {
-                            padOuterPaths[padButton] = path;
-                            originalColors[$"pad_{padButton.Name}_outer"] = path.Fill.Clone();
-                        }
+                        AnalogStickBoundaryCanvas.Children.Add(path);
                     }
                 }
                 
-                padButton.Content = padCanvas;
+                System.Diagnostics.Debug.WriteLine($"Successfully loaded Circle.svg for analog stick boundary");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading Circle.svg: {ex.Message}");
+                MessageBox.Show($"Error loading Circle.svg: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         
-        private void LoadButtonSvgForButton(Button button, string svgFileName)
+        private TransformGroup CreateSvgTransformForCanvas(XmlNode pathNode, double scale, double svgWidth, double svgHeight, double canvasWidth, double canvasHeight)
         {
-            // Load SVG from embedded resource
+            var transformGroup = new TransformGroup();
+            
+            // Parse translate from parent group
+            string? transformStr = pathNode.ParentNode?.Attributes?["transform"]?.Value;
+            if (!string.IsNullOrEmpty(transformStr) && transformStr.Contains("translate"))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(transformStr, @"translate\(([^,]+),([^)]+)\)");
+                if (match.Success)
+                {
+                    double tx = double.Parse(match.Groups[1].Value.Trim());
+                    double ty = double.Parse(match.Groups[2].Value.Trim());
+                    transformGroup.Children.Add(new TranslateTransform(tx, ty));
+                }
+            }
+            
+            // Apply scale and centering
+            transformGroup.Children.Add(new ScaleTransform(scale, scale));
+            double offsetX = (canvasWidth - svgWidth * scale) / 2;
+            double offsetY = (canvasHeight - svgHeight * scale) / 2;
+            transformGroup.Children.Add(new TranslateTransform(offsetX, offsetY));
+            
+            return transformGroup;
+        }
+        
+        /// <summary>
+        /// Generic SVG loader for buttons (pads, bank, octave). Parses SVG, scales it to fit button,
+        /// and caches the "outer" path for hover effects.
+        /// </summary>
+        private void LoadSvgForButton(Button button, string svgFileName, string cacheKey)
+        {
             var resourceUri = new Uri($"pack://application:,,,/svg/{svgFileName}");
-            var resourceStream = Application.GetResourceStream(resourceUri);
-            
-            if (resourceStream == null)
-            {
-                throw new Exception($"Could not load {svgFileName} from resources");
-            }
+            var resourceStream = Application.GetResourceStream(resourceUri) ?? throw new Exception($"Could not load {svgFileName}");
             
             XmlDocument doc = new XmlDocument();
             doc.Load(resourceStream.Stream);
@@ -404,146 +329,136 @@ namespace MIDIStreamDeck
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
             nsmgr.AddNamespace("svg", "http://www.w3.org/2000/svg");
             
-            // Get viewBox to calculate scale
             var svgElement = doc.DocumentElement;
-            string viewBox = svgElement?.GetAttribute("viewBox") ?? "";
-            var viewBoxParts = viewBox.Split(' ');
+            var viewBoxParts = (svgElement?.GetAttribute("viewBox") ?? "").Split(' ');
             double svgWidth = double.Parse(viewBoxParts[2]);
             double svgHeight = double.Parse(viewBoxParts[3]);
+            double scale = Math.Min(button.Width / svgWidth, button.Height / svgHeight);
             
-            // Get button size
-            double buttonWidth = button.Width;
-            double buttonHeight = button.Height;
+            var pathNodes = doc.SelectNodes("//svg:path", nsmgr);
+            if (pathNodes == null) return;
             
-            // Calculate scale
-            double scaleX = buttonWidth / svgWidth;
-            double scaleY = buttonHeight / svgHeight;
-            double scale = Math.Min(scaleX, scaleY); // Use uniform scale
+            var canvas = new Canvas { Width = button.Width, Height = button.Height, Background = Brushes.Transparent };
             
-            // Find all path elements
-            XmlNodeList? pathNodes = doc.SelectNodes("//svg:path", nsmgr);
+            // Determine which layers to show based on the button
+            bool isOctaveDown = button.Name == "OctaveDown";
+            bool isOctaveUp = button.Name == "OctaveUp";
+            bool isBank = button.Name == "Bank";
             
-            if (pathNodes != null)
+            foreach (XmlNode pathNode in pathNodes)
             {
-                // Clear existing content
-                button.Content = null;
+                string id = pathNode.Attributes?["id"]?.Value ?? "";
+                string d = pathNode.Attributes?["d"]?.Value ?? "";
+                if (string.IsNullOrEmpty(d)) continue;
                 
-                // Create a canvas to hold the paths
-                Canvas buttonCanvas = new Canvas
-                {
-                    Width = buttonWidth,
-                    Height = buttonHeight,
-                    Background = Brushes.Transparent
-                };
+                // Check if this path is in a layer group
+                string? parentGroupId = pathNode.ParentNode?.Attributes?["id"]?.Value;
                 
-                foreach (XmlNode pathNode in pathNodes)
+                // Skip octave layers based on button type
+                if (parentGroupId == "octaveUpLayer" && !isOctaveUp)
+                    continue;
+                if (parentGroupId == "octaveDownLayer" && !isOctaveDown)
+                    continue;
+                
+                // Skip bank layers based on button type and current state
+                if (parentGroupId == "bankALayer")
                 {
-                    string id = pathNode.Attributes?["id"]?.Value ?? "";
-                    string d = pathNode.Attributes?["d"]?.Value ?? "";
-                    string fill = pathNode.Attributes?["style"]?.Value?.Split(';')
-                        .FirstOrDefault(s => s.Trim().StartsWith("fill:"))
-                        ?.Split(':')[1]?.Trim() ?? "#ffffff";
-                    
-                    if (!string.IsNullOrEmpty(d))
-                    {
-                        // Create WPF Path element
-                        var path = new System.Windows.Shapes.Path
-                        {
-                            Data = Geometry.Parse(d),
-                            Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fill)),
-                            Stroke = Brushes.Transparent,
-                            StrokeThickness = 0
-                        };
-                        
-                        // Apply transform
-                        var transformGroup = new TransformGroup();
-                        
-                        // Check if path is in a group with transform
-                        var parentNode = pathNode.ParentNode;
-                        string? transformStr = null;
-                        
-                        if (parentNode?.Attributes?["transform"] != null)
-                        {
-                            transformStr = parentNode.Attributes["transform"]!.Value;
-                        }
-                        else if (pathNode.Attributes?["transform"] != null)
-                        {
-                            transformStr = pathNode.Attributes["transform"]!.Value;
-                        }
-                        
-                        if (!string.IsNullOrEmpty(transformStr))
-                        {
-                            if (transformStr.Contains("translate"))
-                            {
-                                var match = System.Text.RegularExpressions.Regex.Match(transformStr, @"translate\(([^,]+),([^)]+)\)");
-                                if (match.Success)
-                                {
-                                    double tx = double.Parse(match.Groups[1].Value.Trim());
-                                    double ty = double.Parse(match.Groups[2].Value.Trim());
-                                    transformGroup.Children.Add(new TranslateTransform(tx, ty));
-                                }
-                            }
-                        }
-                        
-                        // Apply scale and center
-                        transformGroup.Children.Add(new ScaleTransform(scale, scale));
-                        
-                        // Center the scaled content
-                        double scaledWidth = svgWidth * scale;
-                        double scaledHeight = svgHeight * scale;
-                        double offsetX = (buttonWidth - scaledWidth) / 2;
-                        double offsetY = (buttonHeight - scaledHeight) / 2;
-                        transformGroup.Children.Add(new TranslateTransform(offsetX, offsetY));
-                        
-                        path.RenderTransform = transformGroup;
-                        
-                        // Add to canvas
-                        buttonCanvas.Children.Add(path);
-                        
-                        // Cache the outer path for hover effect
-                        if (id == "outer")
-                        {
-                            padOuterPaths[button] = path;
-                            originalColors[$"button_{button.Name}_outer"] = path.Fill.Clone();
-                        }
-                    }
+                    if (!isBank) continue; // Hide for non-bank buttons
+                    if (isBankStateB) continue; // Hide Bank A when in state B
+                }
+                if (parentGroupId == "bankBLayer")
+                {
+                    if (!isBank) continue; // Hide for non-bank buttons
+                    if (!isBankStateB) continue; // Hide Bank B when in state A
                 }
                 
-                button.Content = buttonCanvas;
+                string fill = pathNode.Attributes?["style"]?.Value?.Split(';')
+                    .FirstOrDefault(s => s.Trim().StartsWith("fill:"))?.Split(':')[1]?.Trim() ?? "#ffffff";
+                
+                var path = new System.Windows.Shapes.Path
+                {
+                    Data = Geometry.Parse(d),
+                    Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fill)),
+                    Stroke = Brushes.Transparent,
+                    StrokeThickness = 0,
+                    RenderTransform = CreateSvgTransform(pathNode, scale, svgWidth, svgHeight, button.Width, button.Height)
+                };
+                
+                canvas.Children.Add(path);
+                
+                // Cache outer path for button state/hover effects
+                if (id == "outer")
+                {
+                    padOuterPaths[button] = path;
+                    originalColors[cacheKey] = path.Fill.Clone();
+                }
+                
+                // Cache octave text layer paths
+                if (id == "octaveDown" && isOctaveDown)
+                {
+                    octaveDownButtonTextPath = path;
+                }
+                else if (id == "octaveUp" && isOctaveUp)
+                {
+                    octaveUpButtonTextPath = path;
+                }
+                
+                // Cache bank text layer paths
+                if (id == "bankA" && isBank)
+                {
+                    bankATextPath = path;
+                }
+                else if (id == "bankB" && isBank)
+                {
+                    bankBTextPath = path;
+                }
             }
+            
+            button.Content = canvas;
         }
         
+        /// <summary>
+        /// Creates a transform group that applies SVG translate, scale, and centers the content in the button.
+        /// </summary>
+        private TransformGroup CreateSvgTransform(XmlNode pathNode, double scale, double svgWidth, double svgHeight, double buttonWidth, double buttonHeight)
+        {
+            var transformGroup = new TransformGroup();
+            
+            // Parse translate transforms from parent group and path itself (in order)
+            foreach (var transformStr in new[] { pathNode.ParentNode?.Attributes?["transform"]?.Value, pathNode.Attributes?["transform"]?.Value })
+            {
+                if (!string.IsNullOrEmpty(transformStr) && transformStr.Contains("translate"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(transformStr, @"translate\(([^,]+),([^)]+)\)");
+                    if (match.Success)
+                    {
+                        double tx = double.Parse(match.Groups[1].Value.Trim());
+                        double ty = double.Parse(match.Groups[2].Value.Trim());
+                        transformGroup.Children.Add(new TranslateTransform(tx, ty));
+                    }
+                }
+            }
+            
+            // Apply uniform scale and center the scaled SVG within the button
+            transformGroup.Children.Add(new ScaleTransform(scale, scale));
+            double offsetX = (buttonWidth - svgWidth * scale) / 2;
+            double offsetY = (buttonHeight - svgHeight * scale) / 2;
+            transformGroup.Children.Add(new TranslateTransform(offsetX, offsetY));
+            
+            return transformGroup;
+        }
         
         private void WireKeyButtonEvents()
         {
             // White keys
-            WireKeyButton(w01, "w01", true);
-            WireKeyButton(w02, "w02", true);
-            WireKeyButton(w03, "w03", true);
-            WireKeyButton(w04, "w04", true);
-            WireKeyButton(w05, "w05", true);
-            WireKeyButton(w06, "w06", true);
-            WireKeyButton(w07, "w07", true);
-            WireKeyButton(w08, "w08", true);
-            WireKeyButton(w09, "w09", true);
-            WireKeyButton(w10, "w10", true);
-            WireKeyButton(w11, "w11", true);
-            WireKeyButton(w12, "w12", true);
-            WireKeyButton(w13, "w13", true);
-            WireKeyButton(w14, "w14", true);
-            WireKeyButton(w15, "w15", true);
+            var whiteKeys = new[] { w01, w02, w03, w04, w05, w06, w07, w08, w09, w10, w11, w12, w13, w14, w15 };
+            foreach (var key in whiteKeys)
+                WireKeyButton(key, key.Name, true);
             
             // Black keys
-            WireKeyButton(b01, "b01", false);
-            WireKeyButton(b02, "b02", false);
-            WireKeyButton(b03, "b03", false);
-            WireKeyButton(b04, "b04", false);
-            WireKeyButton(b05, "b05", false);
-            WireKeyButton(b06, "b06", false);
-            WireKeyButton(b07, "b07", false);
-            WireKeyButton(b08, "b08", false);
-            WireKeyButton(b09, "b09", false);
-            WireKeyButton(b10, "b10", false);
+            var blackKeys = new[] { b01, b02, b03, b04, b05, b06, b07, b08, b09, b10 };
+            foreach (var key in blackKeys)
+                WireKeyButton(key, key.Name, false);
         }
         
         private void WireKeyButton(Button button, string keyName, bool isWhiteKey)
@@ -555,40 +470,26 @@ namespace MIDIStreamDeck
         
         private void WirePadButtonEvents()
         {
-            Button[] padButtons = { Pad1, Pad2, Pad3, Pad4, Pad5, Pad6, Pad7, Pad8 };
-            
-            foreach (var padButton in padButtons)
+            foreach (var pad in new[] { Pad1, Pad2, Pad3, Pad4, Pad5, Pad6, Pad7, Pad8 })
             {
-                padButton.Click += (s, e) => OnPadPressed(padButton.Name);
-                padButton.MouseEnter += (s, e) => OnPadHoverEnter(padButton);
-                padButton.MouseLeave += (s, e) => OnPadHoverLeave(padButton);
+                pad.Click += (s, e) => OnPadPressed(pad.Name);
+                pad.MouseEnter += (s, e) => OnPadHoverEnter(pad);
+                pad.MouseLeave += (s, e) => OnPadHoverLeave(pad);
             }
         }
         
-        private void WireBankButtonEvents()
-        {
-            BankButton.Click += (s, e) => OnBankButtonPressed();
-            // Don't use hover effects for Bank button - it has toggle behavior instead
-        }
+        private void WireBankEvents() => Bank.Click += (s, e) => OnBankPressed();
         
         private void WireOctaveButtonEvents()
         {
-            OctaveDownButton.Click += (s, e) => OnOctaveDownPressed();
-            OctaveUpButton.Click += (s, e) => OnOctaveUpPressed();
-            // No hover effects for octave buttons
+            OctaveDown.Click += (s, e) => OnOctaveDownPressed();
+            OctaveUp.Click += (s, e) => OnOctaveUpPressed();
         }
         
         private void WireKnobEvents()
         {
-            // Wire up all knobs
-            WireSingleKnob(Knob1, "Knob1");
-            WireSingleKnob(Knob2, "Knob2");
-            WireSingleKnob(Knob3, "Knob3");
-            WireSingleKnob(Knob4, "Knob4");
-            WireSingleKnob(Knob5, "Knob5");
-            WireSingleKnob(Knob6, "Knob6");
-            WireSingleKnob(Knob7, "Knob7");
-            WireSingleKnob(Knob8, "Knob8");
+            foreach (var knob in new[] { Knob1, Knob2, Knob3, Knob4, Knob5, Knob6, Knob7, Knob8 })
+                WireSingleKnob(knob, knob.Name);
         }
         
         private void WireSingleKnob(Knob knob, string knobName)
@@ -598,45 +499,42 @@ namespace MIDIStreamDeck
                 Title = $"{knobName}: {value}";
                 System.Diagnostics.Debug.WriteLine($"{knobName} value changed: {value}");
                 
-                // Example: Change the handle color based on value
-                // Low values (1-42) = blue, Medium values (43-85) = white, High values (86-127) = orange
+                // Change knob handle color based on value (red=low, white=mid, green=high)
                 var handlePath = knob.GetPath("handle");
                 if (handlePath != null)
                 {
-                    if (value <= 42)
-                    {
-                        handlePath.Fill = new SolidColorBrush(Color.FromRgb(100, 150, 255)); // Light blue
-                    }
-                    else if (value <= 85)
-                    {
-                        handlePath.Fill = new SolidColorBrush(Color.FromRgb(255, 255, 255)); // White
-                    }
-                    else
-                    {
-                        handlePath.Fill = new SolidColorBrush(Color.FromRgb(255, 150, 50)); // Orange
-                    }
+                    handlePath.Fill = value <= 42 ? colorRed :
+                                     value <= 85 ? colorWhite :
+                                                   colorGreen;
                 }
+            };
+        }
+        
+        private void WireAnalogStickEvents()
+        {
+            WireSingleAnalogStick(AnalogStick1, AnalogStick1.Name);
+        }
+        
+        private void WireSingleAnalogStick(AnalogStick stick, string stickName)
+        {
+            stick.AngleChanged += (s, angle) =>
+            {
+                Title = $"{stickName}: {angle}°";
+                System.Diagnostics.Debug.WriteLine($"{stickName} angle changed: {angle}°");
             };
         }
         
         private void OnPadHoverEnter(Button padButton)
         {
             if (padOuterPaths.TryGetValue(padButton, out var outerPath))
-            {
                 outerPath.Fill = hoverColorPadOuter;
-            }
         }
         
         private void OnPadHoverLeave(Button padButton)
         {
-            if (padOuterPaths.TryGetValue(padButton, out var outerPath))
-            {
-                string key = $"pad_{padButton.Name}_outer";
-                if (originalColors.TryGetValue(key, out var originalColor))
-                {
-                    outerPath.Fill = originalColor;
-                }
-            }
+            if (padOuterPaths.TryGetValue(padButton, out var outerPath) && 
+                originalColors.TryGetValue($"pad_{padButton.Name}_outer", out var originalColor))
+                outerPath.Fill = originalColor;
         }
         
         private void OnPadPressed(string padName)
@@ -645,108 +543,83 @@ namespace MIDIStreamDeck
             System.Diagnostics.Debug.WriteLine($"Pad pressed: {padName}");
         }
         
-        private void OnBankButtonPressed()
+        private void OnBankPressed()
         {
-            // Toggle between A and B
-            isBankButtonStateB = !isBankButtonStateB;
+            isBankStateB = !isBankStateB;
+            LoadSvgForButton(Bank, "Button.svg", $"button_{Bank.Name}_outer");
             
-            if (bankButtonOuterPath != null)
+            var bankColor = isBankStateB ? bankButtonRed : bankButtonGreen;
+            
+            // Apply color to outer path and text layer
+            if (padOuterPaths.TryGetValue(Bank, out var outerPath))
             {
-                bankButtonOuterPath.Fill = isBankButtonStateB ? bankButtonRed : bankButtonGreen;
+                bankButtonOuterPath = outerPath;
+                bankButtonOuterPath.Fill = bankColor;
             }
             
-            string state = isBankButtonStateB ? "B" : "A";
+            var textPath = isBankStateB ? bankBTextPath : bankATextPath;
+            if (textPath != null) textPath.Fill = bankColor;
+            
+            string state = isBankStateB ? "B" : "A";
             Title = $"Bank: {state}";
             System.Diagnostics.Debug.WriteLine($"Bank button pressed - State: {state}");
         }
         
         private void OnOctaveDownPressed()
         {
-            if (currentOctave > 0)
-            {
-                currentOctave--;
-                UpdateOctaveButtonColors();
-                Title = $"Octave: {currentOctave}";
-                System.Diagnostics.Debug.WriteLine($"Octave Down pressed - Current Octave: {currentOctave}");
-            }
+            if (currentOctave > 0) { currentOctave--; UpdateOctaveDisplay(); }
         }
         
         private void OnOctaveUpPressed()
         {
-            if (currentOctave < 8)
-            {
-                currentOctave++;
-                UpdateOctaveButtonColors();
-                Title = $"Octave: {currentOctave}";
-                System.Diagnostics.Debug.WriteLine($"Octave Up pressed - Current Octave: {currentOctave}");
-            }
+            if (currentOctave < 8) { currentOctave++; UpdateOctaveDisplay(); }
         }
         
+        private void UpdateOctaveDisplay()
+        {
+            UpdateOctaveButtonColors();
+            Title = $"Octave: {currentOctave}";
+            System.Diagnostics.Debug.WriteLine($"Current Octave: {currentOctave}");
+        }
+        
+        /// <summary>
+        /// Updates octave button colors. OctaveDown shows color when at low octaves (0-3),
+        /// OctaveUp shows color when at high octaves (5-8), both white at octave 4.
+        /// Colors get more intense as you approach the limits (0 or 8).
+        /// </summary>
         private void UpdateOctaveButtonColors()
         {
-            // Color gradient from red (low) through yellow/green to blue (high)
-            // Octave 0 = Red, Octave 4 = Yellow/Green (middle), Octave 8 = Blue
-            byte red, green, blue;
+            // Octave color map: [0]=red (intense), [4]=white (neutral), [8]=red (intense)
+            var downColors = new[] { colorRed, colorRedLight1, colorRedLight2, colorRedLight3, colorWhite, colorWhite, colorWhite, colorWhite, colorWhite };
+            var upColors = new[] { colorWhite, colorWhite, colorWhite, colorWhite, colorWhite, colorRedLight3, colorRedLight2, colorRedLight1, colorRed };
             
-            if (currentOctave <= 4)
-            {
-                // Octaves 0-4: Red to Yellow to Green
-                float ratio = currentOctave / 4.0f;
-                red = (byte)(255 - (ratio * 155)); // 255 -> 100
-                green = (byte)(50 + (ratio * 205)); // 50 -> 255
-                blue = 50;
-            }
-            else
-            {
-                // Octaves 5-8: Green to Blue
-                float ratio = (currentOctave - 4) / 4.0f;
-                red = (byte)(100 - (ratio * 50)); // 100 -> 50
-                green = (byte)(255 - (ratio * 155)); // 255 -> 100
-                blue = (byte)(50 + (ratio * 205)); // 50 -> 255
-            }
+            var downColor = downColors[currentOctave];
+            var upColor = upColors[currentOctave];
             
-            var octaveColor = new SolidColorBrush(Color.FromRgb(red, green, blue));
+            // Apply colors to outer backgrounds and text layers
+            if (octaveDownButtonOuterPath != null) octaveDownButtonOuterPath.Fill = downColor;
+            if (octaveUpButtonOuterPath != null) octaveUpButtonOuterPath.Fill = upColor;
+            if (octaveDownButtonTextPath != null) octaveDownButtonTextPath.Fill = downColor;
+            if (octaveUpButtonTextPath != null) octaveUpButtonTextPath.Fill = upColor;
             
-            // Update both buttons with the same color to show current octave
-            if (octaveDownButtonOuterPath != null)
-            {
-                octaveDownButtonOuterPath.Fill = octaveColor;
-            }
-            
-            if (octaveUpButtonOuterPath != null)
-            {
-                octaveUpButtonOuterPath.Fill = octaveColor;
-            }
-            
-            System.Diagnostics.Debug.WriteLine($"Octave {currentOctave} - Color: RGB({red}, {green}, {blue})");
+            System.Diagnostics.Debug.WriteLine($"Octave {currentOctave} - Down: {downColor}, Up: {upColor}");
         }
         
         private void OnKeyHoverEnter(string keyName, bool isWhiteKey)
         {
             if (svgPaths.TryGetValue(keyName, out var path))
-            {
                 path.Fill = isWhiteKey ? hoverColorWhite : hoverColorBlack;
-            }
         }
         
         private void OnKeyHoverLeave(string keyName)
         {
-            if (svgPaths.TryGetValue(keyName, out var path))
-            {
-                if (originalColors.TryGetValue(keyName, out var originalColor))
-                {
-                    path.Fill = originalColor;
-                }
-            }
+            if (svgPaths.TryGetValue(keyName, out var path) && originalColors.TryGetValue(keyName, out var originalColor))
+                path.Fill = originalColor;
         }
         
         private void OnKeyPressed(string keyName)
         {
-            // Update title bar to show which key was pressed
             Title = $"Key Pressed: {keyName}";
-            
-            // TODO: Add MIDI output logic here
-            // For now, just display the key name
             System.Diagnostics.Debug.WriteLine($"Key pressed: {keyName}");
         }
         
@@ -756,6 +629,7 @@ namespace MIDIStreamDeck
             Title = $"X: {position.X:F0}, Y: {position.Y:F0}";
         }
 
+        // Windows message constants for aspect ratio locking
         private const int WM_SIZING = 0x0214;
         private const int WMSZ_LEFT = 1;
         private const int WMSZ_RIGHT = 2;
@@ -763,33 +637,28 @@ namespace MIDIStreamDeck
         private const int WMSZ_BOTTOM = 6;
         private const double AspectRatio = 1066.0 / 640.0;
 
+        /// <summary>
+        /// Window message handler that maintains aspect ratio during window resizing.
+        /// Adjusts width when dragging vertically, adjusts height when dragging horizontally/corners.
+        /// </summary>
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (msg == WM_SIZING)
             {
                 var rc = System.Runtime.InteropServices.Marshal.PtrToStructure<RECT>(lParam);
-                
                 double width = rc.Right - rc.Left;
                 double height = rc.Bottom - rc.Top;
-                
                 int edge = wParam.ToInt32();
                 
-                // Maintain aspect ratio based on which edge is being dragged
-                if (edge == WMSZ_LEFT || edge == WMSZ_RIGHT)
+                if (edge == WMSZ_TOP || edge == WMSZ_BOTTOM)
                 {
-                    // Dragging horizontally, adjust height
-                    height = width / AspectRatio;
-                    rc.Bottom = rc.Top + (int)height;
-                }
-                else if (edge == WMSZ_TOP || edge == WMSZ_BOTTOM)
-                {
-                    // Dragging vertically, adjust width
+                    // Vertical drag: adjust width to maintain aspect ratio
                     width = height * AspectRatio;
                     rc.Right = rc.Left + (int)width;
                 }
                 else
                 {
-                    // Corner drag - adjust based on width
+                    // Horizontal or corner drag: adjust height to maintain aspect ratio
                     height = width / AspectRatio;
                     rc.Bottom = rc.Top + (int)height;
                 }

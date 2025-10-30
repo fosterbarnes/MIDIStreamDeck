@@ -14,10 +14,14 @@
     <Resource Include="svg\KeysCombined.svg" />
     <Resource Include="svg\Knob.svg" />
     <Resource Include="svg\Button.svg" />
+    <Resource Include="svg\AnalogStick.svg" />
+    <Resource Include="svg\Circle.svg" />
     <Resource Include="svg\PadFull.png" />
     <Resource Include="svg\KeysCombined.png" />
     <Resource Include="svg\Knob.png" />
     <Resource Include="svg\Button.png" />
+    <Resource Include="svg\AnalogStick.png" />
+    <Resource Include="svg\Circle.png" />
 
   </ItemGroup>
 

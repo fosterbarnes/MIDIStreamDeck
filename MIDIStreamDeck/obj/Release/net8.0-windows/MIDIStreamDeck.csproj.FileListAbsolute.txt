@@ -28,3 +28,9 @@ C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\o
 C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\obj\Release\net8.0-windows\MIDIStreamDeck.pdb
 C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\obj\Release\net8.0-windows\MIDIStreamDeck.genruntimeconfig.cache
 C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\obj\Release\net8.0-windows\ref\MIDIStreamDeck.dll
+C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\obj\Release\net8.0-windows\Knob.g.cs
+C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\obj\Release\net8.0-windows\GeneratedInternalTypeHelper.g.cs
+C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\obj\Release\net8.0-windows\Knob.baml
+C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\obj\Release\net8.0-windows\MIDIStreamDeck.sourcelink.json
+C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\obj\Release\net8.0-windows\AnalogStick.g.cs
+C:\Users\Foster\Documents\Visual Studio Projects\MIDIStreamDeck\MIDIStreamDeck\obj\Release\net8.0-windows\AnalogStick.baml

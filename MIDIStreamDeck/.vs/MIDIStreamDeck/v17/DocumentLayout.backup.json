@@ -9,6 +9,14 @@
     {
       "AbsoluteMoniker": "D:0:0:{3124FB04-F0C0-4474-BEAE-EFE01CD31DB7}|MIDIStreamDeck.csproj|c:\\users\\foster\\documents\\visual studio projects\\midistreamdeck\\midistreamdeck\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{3124FB04-F0C0-4474-BEAE-EFE01CD31DB7}|MIDIStreamDeck.csproj|solutionrelative:mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3124FB04-F0C0-4474-BEAE-EFE01CD31DB7}|MIDIStreamDeck.csproj|c:\\users\\foster\\documents\\visual studio projects\\midistreamdeck\\midistreamdeck\\knob.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3124FB04-F0C0-4474-BEAE-EFE01CD31DB7}|MIDIStreamDeck.csproj|solutionrelative:knob.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3124FB04-F0C0-4474-BEAE-EFE01CD31DB7}|MIDIStreamDeck.csproj|c:\\users\\foster\\documents\\visual studio projects\\midistreamdeck\\midistreamdeck\\knob.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{3124FB04-F0C0-4474-BEAE-EFE01CD31DB7}|MIDIStreamDeck.csproj|solutionrelative:knob.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,7 +26,7 @@
       "DocumentGroups": [
         {
           "DockedHeight": 341,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Bookmark",
@@ -27,6 +35,35 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{25f7e850-ffa1-11d0-b63f-00a0c922e851}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Knob.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\Foster\\Documents\\Visual Studio Projects\\MIDIStreamDeck\\MIDIStreamDeck\\Knob.xaml.cs",
+              "RelativeDocumentMoniker": "Knob.xaml.cs",
+              "ToolTip": "C:\\Users\\Foster\\Documents\\Visual Studio Projects\\MIDIStreamDeck\\MIDIStreamDeck\\Knob.xaml.cs",
+              "RelativeToolTip": "Knob.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-30T02:24:04.058Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Knob.xaml",
+              "DocumentMoniker": "C:\\Users\\Foster\\Documents\\Visual Studio Projects\\MIDIStreamDeck\\MIDIStreamDeck\\Knob.xaml",
+              "RelativeDocumentMoniker": "Knob.xaml",
+              "ToolTip": "C:\\Users\\Foster\\Documents\\Visual Studio Projects\\MIDIStreamDeck\\MIDIStreamDeck\\Knob.xaml",
+              "RelativeToolTip": "Knob.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-10-30T02:24:01.85Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -48,13 +85,10 @@
               "RelativeDocumentMoniker": "MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\Foster\\Documents\\Visual Studio Projects\\MIDIStreamDeck\\MIDIStreamDeck\\MainWindow.xaml.cs",
               "RelativeToolTip": "MainWindow.xaml.cs",
-              "ViewState": "AgIAABwAAAAAAAAAAAAgwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAgBAAAAAAAAAAAuwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-25T23:09:57.764Z"
-            },
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+              "WhenOpened": "2025-10-25T23:09:57.764Z",
+              "EditorCaption": ""
             }
           ]
         },

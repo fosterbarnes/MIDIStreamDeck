@@ -156,14 +156,37 @@
         <!-- Viewbox scales everything proportionally -->
         <Viewbox Grid.Row="1" Stretch="Uniform">
             <!-- Fixed-size canvas that will be scaled -->
-            <Grid Width="1066" Height="640">
+            <Grid Width="1066" Height="640" Background="#1b1b1b">
                 <Grid.Resources>
-                    <!-- Style for keyboard key buttons (transparent overlay) -->
-                    <Style x:Key="KeyButtonStyle" TargetType="Button">
+                    <!-- Style for white keyboard key buttons (transparent overlay) -->
+                    <Style x:Key="WhiteKey" TargetType="Button">
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Cursor" Value="Hand"/>
                         <Setter Property="Opacity" Value="0.01"/>
+                        <Setter Property="Height" Value="278"/>
+                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}">
+                                        <ContentPresenter/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <!-- Style for black keyboard key buttons (transparent overlay) -->
+                    <Style x:Key="BlackKey" TargetType="Button">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Opacity" Value="0.01"/>
+                        <Setter Property="Height" Value="163"/>
+                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="Button">
@@ -176,199 +199,160 @@
                     </Style>
 
                     <!-- Style for pad buttons (fully transparent, no hover effect on button itself) -->
-                    <Style x:Key="PadButtonStyle" TargetType="Button">
+                    <Style x:Key="Pad" TargetType="Button">
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Cursor" Value="Hand"/>
                         <Setter Property="ClipToBounds" Value="True"/>
+                        <Setter Property="Width" Value="95"/>
+                        <Setter Property="Height" Value="95"/>
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="Button">
                                     <Border Background="Transparent" ClipToBounds="True">
-                                        <ContentPresenter/>
+                                        <Grid>
+                                            <!-- Design-time preview image -->
+                                            <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                                            <ContentPresenter/>
+                                        </Grid>
                                     </Border>
                                 </ControlTemplate>
                             </Setter.Value>
                         </Setter>
                     </Style>
+
+                    <!-- Style for small buttons (Bank, Octave) -->
+                    <Style x:Key="SmallButton" TargetType="Button">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="ClipToBounds" Value="True"/>
+                        <Setter Property="Width" Value="48"/>
+                        <Setter Property="Height" Value="29"/>
+                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="Transparent" ClipToBounds="True">
+                                        <Grid>
+                                            <!-- Design-time preview image -->
+                                            <Image Source="/svg/Button.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                                            <ContentPresenter/>
+                                        </Grid>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <!-- Style for knobs -->
+                    <Style x:Key="Knob" TargetType="local:Knob">
+                        <Setter Property="Width" Value="54"/>
+                        <Setter Property="Height" Value="54"/>
+                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                        <Setter Property="VerticalAlignment" Value="Top"/>
+                    </Style>
+
+                    <!-- Style for analog sticks -->
+                    <Style x:Key="AnalogStick" TargetType="local:AnalogStick">
+                        <Setter Property="Width" Value="70"/>
+                        <Setter Property="Height" Value="70"/>
+                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                        <Setter Property="VerticalAlignment" Value="Top"/>
+                    </Style>
                 </Grid.Resources>
-                <!-- Background mockup image -->
-                <Image Source="/MIDIStreamDeck;component/images/MIDIStreamDeck.png" 
-                       Stretch="Fill"/>
 
                 <!-- Canvas for absolute positioning of buttons -->
                 <Canvas>
-                    <!-- Pad 1 -->
-                    <Button x:Name="Pad1" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="185" Canvas.Top="41" 
-                            Width="95" Height="95"
-                            d:Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
-                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
-
-                    <!-- Pad 2 -->
-                    <Button x:Name="Pad2" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="302" Canvas.Top="41" 
-                            Width="95" Height="95">
-                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
-
-                    <!-- Pad 3 -->
-                    <Button x:Name="Pad3" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="419" Canvas.Top="41" 
-                            Width="95" Height="95">
-                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
-
-                    <!-- Pad 4 -->
-                    <Button x:Name="Pad4" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="536" Canvas.Top="41" 
-                            Width="95" Height="95">
-                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
-
-                    <!-- Pad 5 -->
-                    <Button x:Name="Pad5" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="185" Canvas.Top="161" 
-                            Width="95" Height="95">
-                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
-
-                    <!-- Pad 6 -->
-                    <Button x:Name="Pad6" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="302" Canvas.Top="161" 
-                            Width="95" Height="95">
-                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
-
-                    <!-- Pad 7 -->
-                    <Button x:Name="Pad7" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="419" Canvas.Top="161" 
-                            Width="95" Height="95">
-                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
-
-                    <!-- Pad 8 -->
-                    <Button x:Name="Pad8" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="536" Canvas.Top="161" 
-                            Width="95" Height="95">
-                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
+                    <!-- Pads (1-8) -->
+                    <Button x:Name="Pad1" Style="{StaticResource Pad}" Canvas.Left="185" Canvas.Top="41"/>
+                    <Button x:Name="Pad2" Style="{StaticResource Pad}" Canvas.Left="302" Canvas.Top="41"/>
+                    <Button x:Name="Pad3" Style="{StaticResource Pad}" Canvas.Left="419" Canvas.Top="41"/>
+                    <Button x:Name="Pad4" Style="{StaticResource Pad}" Canvas.Left="536" Canvas.Top="41"/>
+                    <Button x:Name="Pad5" Style="{StaticResource Pad}" Canvas.Left="185" Canvas.Top="161"/>
+                    <Button x:Name="Pad6" Style="{StaticResource Pad}" Canvas.Left="302" Canvas.Top="161"/>
+                    <Button x:Name="Pad7" Style="{StaticResource Pad}" Canvas.Left="419" Canvas.Top="161"/>
+                    <Button x:Name="Pad8" Style="{StaticResource Pad}" Canvas.Left="536" Canvas.Top="161"/>
 
                     <!-- Bank Button -->
-                    <Button x:Name="BankButton" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="668" Canvas.Top="227" 
-                            Width="48" Height="29" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Image Source="/svg/Button.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
+                    <Button x:Name="Bank" Style="{StaticResource SmallButton}" Canvas.Left="668" Canvas.Top="227"/>
 
-                    <!-- Octave Down Button -->
-                    <Button x:Name="OctaveDownButton" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="40" Canvas.Top="190" 
-                            Width="48" Height="29" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Image Source="/svg/Button.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
-
-                    <!-- Octave Up Button -->
-                    <Button x:Name="OctaveUpButton" Style="{StaticResource PadButtonStyle}"
-                            Canvas.Left="110" Canvas.Top="190" 
-                            Width="48" Height="29" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Image Source="/svg/Button.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
-                    </Button>
+                    <!-- Octave Buttons (Down and Up) -->
+                    <Button x:Name="OctaveDown" Style="{StaticResource SmallButton}" Canvas.Left="40" Canvas.Top="190"/>
+                    <Button x:Name="OctaveUp" Style="{StaticResource SmallButton}" Canvas.Left="110" Canvas.Top="190"/>
 
                     <!-- KeysCombined.svg as background - using Canvas for manual rendering -->
-                    <Canvas x:Name="KeyboardSvgCanvas"
-                            Canvas.Left="40" Canvas.Top="325" 
-                            Width="990" Height="275"/>
+                    <Canvas x:Name="KeyboardSvgCanvas" Canvas.Left="40" Canvas.Top="325" Width="990" Height="275"/>
+
+                    <!-- Design-time keyboard preview (visible only in designer) -->
+                    <Image Source="/svg/KeysCombined.png" Canvas.Left="40" Canvas.Top="325" Width="990" Height="275"
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill" IsHitTestVisible="False"/>
 
                     <!-- White Key Buttons (w01-w15) -->
-                    <Button x:Name="w01" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="40" Canvas.Top="325" Width="61" Height="278" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-                    <Button x:Name="w02" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="105" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Button x:Name="w03" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="172" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="w04" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="239" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="w05" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="306" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Button x:Name="w06" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="372" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="w07" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="438" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="w08" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="503" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="w09" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="570" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="w10" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="637" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="w11" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="704" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Button x:Name="w12" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="771" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="w13" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="837" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Button x:Name="w14" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="903" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Button x:Name="w15" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="969" Canvas.Top="325" Width="61" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button x:Name="w01" Style="{StaticResource WhiteKey}" Canvas.Left="40"  Canvas.Top="325" Width="61"/>
+                    <Button x:Name="w02" Style="{StaticResource WhiteKey}" Canvas.Left="105" Canvas.Top="325" Width="63"/>
+                    <Button x:Name="w03" Style="{StaticResource WhiteKey}" Canvas.Left="172" Canvas.Top="325" Width="63"/>
+                    <Button x:Name="w04" Style="{StaticResource WhiteKey}" Canvas.Left="239" Canvas.Top="325" Width="63"/>
+                    <Button x:Name="w05" Style="{StaticResource WhiteKey}" Canvas.Left="306" Canvas.Top="325" Width="62"/>
+                    <Button x:Name="w06" Style="{StaticResource WhiteKey}" Canvas.Left="372" Canvas.Top="325" Width="62"/>
+                    <Button x:Name="w07" Style="{StaticResource WhiteKey}" Canvas.Left="438" Canvas.Top="325" Width="62"/>
+                    <Button x:Name="w08" Style="{StaticResource WhiteKey}" Canvas.Left="503" Canvas.Top="325" Width="63"/>
+                    <Button x:Name="w09" Style="{StaticResource WhiteKey}" Canvas.Left="570" Canvas.Top="325" Width="63"/>
+                    <Button x:Name="w10" Style="{StaticResource WhiteKey}" Canvas.Left="637" Canvas.Top="325" Width="63"/>
+                    <Button x:Name="w11" Style="{StaticResource WhiteKey}" Canvas.Left="704" Canvas.Top="325" Width="63"/>
+                    <Button x:Name="w12" Style="{StaticResource WhiteKey}" Canvas.Left="771" Canvas.Top="325" Width="62"/>
+                    <Button x:Name="w13" Style="{StaticResource WhiteKey}" Canvas.Left="837" Canvas.Top="325" Width="62"/>
+                    <Button x:Name="w14" Style="{StaticResource WhiteKey}" Canvas.Left="903" Canvas.Top="325" Width="62"/>
+                    <Button x:Name="w15" Style="{StaticResource WhiteKey}" Canvas.Left="969" Canvas.Top="325" Width="61"/>
 
                     <!-- Black Key Buttons (b01-b10) -->
-                    <Button x:Name="b01" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="83" Canvas.Top="325" Width="30" Height="163" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Button x:Name="b02" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="161" Canvas.Top="325" Width="28" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="b03" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="281" Canvas.Top="325" Width="28" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="b04" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="355" Canvas.Top="325" Width="29" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="b05" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="430" Canvas.Top="325" Width="27" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="b06" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="547" Canvas.Top="325" Width="29" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="b07" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="625" Canvas.Top="325" Width="28" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="b08" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="746" Canvas.Top="325" Width="29" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="b09" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="821" Canvas.Top="325" Width="29" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                    <Button x:Name="b10" Style="{StaticResource KeyButtonStyle}" 
-                            Canvas.Left="895" Canvas.Top="325" Width="28" Height="163" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button x:Name="b01" Style="{StaticResource BlackKey}" Canvas.Left="83"  Canvas.Top="325" Width="30"/>
+                    <Button x:Name="b02" Style="{StaticResource BlackKey}" Canvas.Left="161" Canvas.Top="325" Width="28"/>
+                    <Button x:Name="b03" Style="{StaticResource BlackKey}" Canvas.Left="281" Canvas.Top="325" Width="28"/>
+                    <Button x:Name="b04" Style="{StaticResource BlackKey}" Canvas.Left="355" Canvas.Top="325" Width="29"/>
+                    <Button x:Name="b05" Style="{StaticResource BlackKey}" Canvas.Left="430" Canvas.Top="325" Width="27"/>
+                    <Button x:Name="b06" Style="{StaticResource BlackKey}" Canvas.Left="547" Canvas.Top="325" Width="29"/>
+                    <Button x:Name="b07" Style="{StaticResource BlackKey}" Canvas.Left="625" Canvas.Top="325" Width="28"/>
+                    <Button x:Name="b08" Style="{StaticResource BlackKey}" Canvas.Left="746" Canvas.Top="325" Width="29"/>
+                    <Button x:Name="b09" Style="{StaticResource BlackKey}" Canvas.Left="821" Canvas.Top="325" Width="29"/>
+                    <Button x:Name="b10" Style="{StaticResource BlackKey}" Canvas.Left="895" Canvas.Top="325" Width="28"/>
 
                     <!-- Knobs -->
-                    <local:Knob x:Name="Knob1" KnobName="Knob1"
-                            Canvas.Left="665" Canvas.Top="40" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <local:Knob x:Name="Knob1" KnobName="Knob1" Style="{StaticResource Knob}" Canvas.Left="665" Canvas.Top="40"/>
                     <Image Source="/svg/Knob.png" Canvas.Left="665" Canvas.Top="40" Width="54" Height="54" 
                            d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
-                    <local:Knob x:Name="Knob2" KnobName="Knob2"
-                            Canvas.Left="767" Canvas.Top="40" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <local:Knob x:Name="Knob2" KnobName="Knob2" Style="{StaticResource Knob}" Canvas.Left="767" Canvas.Top="40"/>
                     <Image Source="/svg/Knob.png" Canvas.Left="767" Canvas.Top="40" Width="54" Height="54" 
                            d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
-                    <local:Knob x:Name="Knob3" KnobName="Knob3"
-                            Canvas.Left="869" Canvas.Top="40" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <local:Knob x:Name="Knob3" KnobName="Knob3" Style="{StaticResource Knob}" Canvas.Left="869" Canvas.Top="40"/>
                     <Image Source="/svg/Knob.png" Canvas.Left="869" Canvas.Top="40" Width="54" Height="54" 
                            d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
-                    <local:Knob x:Name="Knob4" KnobName="Knob4"
-                            Canvas.Left="971" Canvas.Top="40" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <local:Knob x:Name="Knob4" KnobName="Knob4" Style="{StaticResource Knob}" Canvas.Left="971" Canvas.Top="40"/>
                     <Image Source="/svg/Knob.png" Canvas.Left="971" Canvas.Top="40" Width="54" Height="54" 
                            d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
-                    <local:Knob x:Name="Knob5" KnobName="Knob5"
-                            Canvas.Left="665" Canvas.Top="141" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <local:Knob x:Name="Knob5" KnobName="Knob5" Style="{StaticResource Knob}" Canvas.Left="665" Canvas.Top="141"/>
                     <Image Source="/svg/Knob.png" Canvas.Left="665" Canvas.Top="141" Width="54" Height="54" 
                            d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
-                    <local:Knob x:Name="Knob6" KnobName="Knob6"
-                            Canvas.Left="767" Canvas.Top="141" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <local:Knob x:Name="Knob6" KnobName="Knob6" Style="{StaticResource Knob}" Canvas.Left="767" Canvas.Top="141"/>
                     <Image Source="/svg/Knob.png" Canvas.Left="767" Canvas.Top="141" Width="54" Height="54" 
                            d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
-                    <local:Knob x:Name="Knob7" KnobName="Knob7"
-                            Canvas.Left="869" Canvas.Top="141" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <local:Knob x:Name="Knob7" KnobName="Knob7" Style="{StaticResource Knob}" Canvas.Left="869" Canvas.Top="141"/>
                     <Image Source="/svg/Knob.png" Canvas.Left="869" Canvas.Top="141" Width="54" Height="54" 
                            d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
-                    <local:Knob x:Name="Knob8" KnobName="Knob8"
-                            Canvas.Left="971" Canvas.Top="141" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <local:Knob x:Name="Knob8" KnobName="Knob8" Style="{StaticResource Knob}" Canvas.Left="971" Canvas.Top="141"/>
                     <Image Source="/svg/Knob.png" Canvas.Left="971" Canvas.Top="141" Width="54" Height="54" 
                            d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
 
+                    <!-- Circle boundary for analog stick movement -->
+                    <Canvas x:Name="AnalogStickBoundaryCanvas" Canvas.Left="54" Canvas.Top="44" Width="90" Height="90"/>
+                    <Image Source="/svg/Circle.png" Canvas.Left="54" Canvas.Top="44" Width="90" Height="90" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
+                    
+                    <!-- Analog Stick -->
+                    <local:AnalogStick x:Name="AnalogStick1" AnalogStickName="AnalogStick1" Style="{StaticResource AnalogStick}" Canvas.Left="68" Canvas.Top="58" Width="62" Height="62"/>
+                    <Image Source="/svg/AnalogStick.png" Canvas.Left="68" Canvas.Top="60" Width="62" Height="62" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top"/>
 
                 </Canvas>
             </Grid>
