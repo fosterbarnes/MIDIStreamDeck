@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "YIHy7LPR2fo=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Foster\\Documents\\Visual Studio Projects\\MIDIStreamDeck\\MIDIStreamDeck\\MIDIStreamDeck.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Foster\\.nuget\\packages\\sharpvectors\\1.8.5\\sharpvectors.1.8.5.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,0 +1,377 @@
+﻿<Window x:Class="MIDIStreamDeck.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MIDIStreamDeck"
+        xmlns:svgc="http://sharpvectors.codeplex.com/svgc/"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="640" Width="1066">
+    <Window.Resources>
+        <!-- Dark Theme Menu Styles -->
+        <Style TargetType="Menu">
+            <Setter Property="Background" Value="#FF2d2d2d"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style TargetType="MenuItem">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                BorderThickness="0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Header -->
+                                <ContentPresenter x:Name="HeaderHost"
+                                                Grid.Column="0"
+                                                ContentSource="Header"
+                                                RecognizesAccessKey="True"
+                                                VerticalAlignment="Center"
+                                                Margin="4,4,0,0"/>
+
+                                <!-- Shortcut -->
+                                <TextBlock x:Name="InputGestureText"
+                                         Grid.Column="1"
+                                         Text="{TemplateBinding InputGestureText}"
+                                         Margin="20,4,8,4"
+                                         VerticalAlignment="Center"
+                                         Foreground="#FF808080"/>
+
+                                <!-- Submenu arrow -->
+                                <Path x:Name="ArrowPath"
+                                    Grid.Column="2"
+                                    Margin="4,0,4,0"
+                                    VerticalAlignment="Center"
+                                    Fill="{TemplateBinding Foreground}"
+                                    Data="M 0 0 L 4 3.5 L 0 7 Z"
+                                    Visibility="Collapsed"/>
+
+                                <!-- Popup for submenus -->
+                                <Popup x:Name="PART_Popup"
+                                     Placement="Right"
+                                     HorizontalOffset="0"
+                                     VerticalOffset="0"
+                                     IsOpen="{TemplateBinding IsSubmenuOpen}"
+                                     AllowsTransparency="True"
+                                     Focusable="False"
+                                     PopupAnimation="Fade">
+                                    <Border Background="#FF2d2d2d"
+                                          BorderThickness="1"
+                                          BorderBrush="#FF505050"
+                                          Padding="0">
+                                        <StackPanel IsItemsHost="True"
+                                                  Grid.IsSharedSizeScope="True"
+                                                  KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- Show arrow if has subitems -->
+                            <Trigger Property="Role" Value="TopLevelHeader">
+                                <Setter TargetName="PART_Popup" Property="Placement" Value="Bottom"/>
+                                <Setter TargetName="PART_Popup" Property="HorizontalOffset" Value="-8"/>
+                                <Setter TargetName="PART_Popup" Property="VerticalOffset" Value="4"/>
+                                <Setter TargetName="Border" Property="Padding" Value="8,4"/>
+                                <Setter TargetName="InputGestureText" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="ArrowPath" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="HeaderHost" Property="Margin" Value="0"/>
+                            </Trigger>
+                            <Trigger Property="Role" Value="SubmenuHeader">
+                                <Setter TargetName="ArrowPath" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="HeaderHost" Property="Margin" Value="36,4,4,4"/>
+                            </Trigger>
+
+                            <!-- Add extra margin for dropdown items -->
+                            <Trigger Property="Role" Value="SubmenuItem">
+                                <Setter TargetName="HeaderHost" Property="Margin" Value="36,4,4,4"/>
+                            </Trigger>
+
+                            <!-- Hover effect -->
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#FF0A5E99"/>
+                            </Trigger>
+
+                            <!-- Disabled state -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#FF808080"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Separator">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border Height="1" 
+                                Background="#FF505050"
+                                SnapsToDevicePixels="True"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="#FF1b1b1b">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New" InputGestureText="Ctrl+N"/>
+                <MenuItem Header="_Open..." InputGestureText="Ctrl+O"/>
+                <MenuItem Header="_Save" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="Save _As..."/>
+                <Separator/>
+                <MenuItem Header="E_xit" InputGestureText="Alt+F4"/>
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Undo" InputGestureText="Ctrl+Z"/>
+                <MenuItem Header="_Redo" InputGestureText="Ctrl+Y"/>
+                <Separator/>
+                <MenuItem Header="Cu_t" InputGestureText="Ctrl+X"/>
+                <MenuItem Header="_Copy" InputGestureText="Ctrl+C"/>
+                <MenuItem Header="_Paste" InputGestureText="Ctrl+V"/>
+                <Separator/>
+                <MenuItem Header="_Preferences..."/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Viewbox scales everything proportionally -->
+        <Viewbox Grid.Row="1" Stretch="Uniform">
+            <!-- Fixed-size canvas that will be scaled -->
+            <Grid Width="1066" Height="640">
+                <Grid.Resources>
+                    <!-- Style for keyboard key buttons (transparent overlay) -->
+                    <Style x:Key="KeyButtonStyle" TargetType="Button">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Opacity" Value="0.01"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}">
+                                        <ContentPresenter/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <!-- Style for pad buttons (fully transparent, no hover effect on button itself) -->
+                    <Style x:Key="PadButtonStyle" TargetType="Button">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="ClipToBounds" Value="True"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="Transparent" ClipToBounds="True">
+                                        <ContentPresenter/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Grid.Resources>
+                <!-- Background mockup image -->
+                <Image Source="/MIDIStreamDeck;component/images/MIDIStreamDeck.png" 
+                       Stretch="Fill"/>
+
+                <!-- Canvas for absolute positioning of buttons -->
+                <Canvas>
+                    <!-- Pad 1 -->
+                    <Button x:Name="Pad1" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="185" Canvas.Top="41" 
+                            Width="95" Height="95"
+                            d:Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Pad 2 -->
+                    <Button x:Name="Pad2" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="302" Canvas.Top="41" 
+                            Width="95" Height="95">
+                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Pad 3 -->
+                    <Button x:Name="Pad3" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="419" Canvas.Top="41" 
+                            Width="95" Height="95">
+                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Pad 4 -->
+                    <Button x:Name="Pad4" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="536" Canvas.Top="41" 
+                            Width="95" Height="95">
+                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Pad 5 -->
+                    <Button x:Name="Pad5" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="185" Canvas.Top="161" 
+                            Width="95" Height="95">
+                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Pad 6 -->
+                    <Button x:Name="Pad6" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="302" Canvas.Top="161" 
+                            Width="95" Height="95">
+                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Pad 7 -->
+                    <Button x:Name="Pad7" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="419" Canvas.Top="161" 
+                            Width="95" Height="95">
+                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Pad 8 -->
+                    <Button x:Name="Pad8" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="536" Canvas.Top="161" 
+                            Width="95" Height="95">
+                        <Image Source="/svg/PadFull.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Bank Button -->
+                    <Button x:Name="BankButton" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="668" Canvas.Top="227" 
+                            Width="48" Height="29" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Image Source="/svg/Button.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Octave Down Button -->
+                    <Button x:Name="OctaveDownButton" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="40" Canvas.Top="190" 
+                            Width="48" Height="29" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Image Source="/svg/Button.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- Octave Up Button -->
+                    <Button x:Name="OctaveUpButton" Style="{StaticResource PadButtonStyle}"
+                            Canvas.Left="110" Canvas.Top="190" 
+                            Width="48" Height="29" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Image Source="/svg/Button.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Fill"/>
+                    </Button>
+
+                    <!-- KeysCombined.svg as background - using Canvas for manual rendering -->
+                    <Canvas x:Name="KeyboardSvgCanvas"
+                            Canvas.Left="40" Canvas.Top="325" 
+                            Width="990" Height="275"/>
+
+                    <!-- White Key Buttons (w01-w15) -->
+                    <Button x:Name="w01" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="40" Canvas.Top="325" Width="61" Height="278" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                    <Button x:Name="w02" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="105" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button x:Name="w03" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="172" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="w04" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="239" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="w05" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="306" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button x:Name="w06" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="372" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="w07" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="438" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="w08" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="503" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="w09" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="570" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="w10" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="637" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="w11" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="704" Canvas.Top="325" Width="63" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button x:Name="w12" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="771" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="w13" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="837" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button x:Name="w14" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="903" Canvas.Top="325" Width="62" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button x:Name="w15" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="969" Canvas.Top="325" Width="61" Height="278" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                    <!-- Black Key Buttons (b01-b10) -->
+                    <Button x:Name="b01" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="83" Canvas.Top="325" Width="30" Height="163" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button x:Name="b02" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="161" Canvas.Top="325" Width="28" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="b03" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="281" Canvas.Top="325" Width="28" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="b04" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="355" Canvas.Top="325" Width="29" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="b05" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="430" Canvas.Top="325" Width="27" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="b06" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="547" Canvas.Top="325" Width="29" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="b07" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="625" Canvas.Top="325" Width="28" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="b08" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="746" Canvas.Top="325" Width="29" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="b09" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="821" Canvas.Top="325" Width="29" Height="163" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <Button x:Name="b10" Style="{StaticResource KeyButtonStyle}" 
+                            Canvas.Left="895" Canvas.Top="325" Width="28" Height="163" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                    <!-- Knobs -->
+                    <local:Knob x:Name="Knob1" KnobName="Knob1"
+                            Canvas.Left="665" Canvas.Top="40" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <Image Source="/svg/Knob.png" Canvas.Left="665" Canvas.Top="40" Width="54" Height="54" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
+                    <local:Knob x:Name="Knob2" KnobName="Knob2"
+                            Canvas.Left="767" Canvas.Top="40" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <Image Source="/svg/Knob.png" Canvas.Left="767" Canvas.Top="40" Width="54" Height="54" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
+                    <local:Knob x:Name="Knob3" KnobName="Knob3"
+                            Canvas.Left="869" Canvas.Top="40" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <Image Source="/svg/Knob.png" Canvas.Left="869" Canvas.Top="40" Width="54" Height="54" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
+                    <local:Knob x:Name="Knob4" KnobName="Knob4"
+                            Canvas.Left="971" Canvas.Top="40" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <Image Source="/svg/Knob.png" Canvas.Left="971" Canvas.Top="40" Width="54" Height="54" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
+                    <local:Knob x:Name="Knob5" KnobName="Knob5"
+                            Canvas.Left="665" Canvas.Top="141" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <Image Source="/svg/Knob.png" Canvas.Left="665" Canvas.Top="141" Width="54" Height="54" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
+                    <local:Knob x:Name="Knob6" KnobName="Knob6"
+                            Canvas.Left="767" Canvas.Top="141" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <Image Source="/svg/Knob.png" Canvas.Left="767" Canvas.Top="141" Width="54" Height="54" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
+                    <local:Knob x:Name="Knob7" KnobName="Knob7"
+                            Canvas.Left="869" Canvas.Top="141" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <Image Source="/svg/Knob.png" Canvas.Left="869" Canvas.Top="141" Width="54" Height="54" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
+                    <local:Knob x:Name="Knob8" KnobName="Knob8"
+                            Canvas.Left="971" Canvas.Top="141" Width="54" Height="54 " HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <Image Source="/svg/Knob.png" Canvas.Left="971" Canvas.Top="141" Width="54" Height="54" 
+                           d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform" IsHitTestVisible="False"/>
+
+
+                </Canvas>
+            </Grid>
+        </Viewbox>
+    </Grid>
+</Window>

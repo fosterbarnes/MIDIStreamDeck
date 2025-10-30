@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="images\MIDIStreamDeck.png" />
+    <Resource Include="svg\PadFull.svg" />
+    <Resource Include="svg\KeysCombined.svg" />
+    <Resource Include="svg\Knob.svg" />
+    <Resource Include="svg\Button.svg" />
+    <Resource Include="svg\PadFull.png" />
+    <Resource Include="svg\KeysCombined.png" />
+    <Resource Include="svg\Knob.png" />
+    <Resource Include="svg\Button.png" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpVectors" Version="1.8.5" />
+  </ItemGroup>
+
+</Project>

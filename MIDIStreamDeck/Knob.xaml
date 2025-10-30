@@ -1,0 +1,29 @@
+<UserControl x:Class="MIDIStreamDeck.Knob"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MIDIStreamDeck"
+             mc:Ignorable="d" 
+             d:DesignHeight="100" d:DesignWidth="100"
+             Background="Transparent"
+             Cursor="Hand">
+    <Grid>
+        <!-- Design-time preview image (visible only in designer) -->
+        <Image Source="/svg/Knob.png" d:Visibility="Visible" Visibility="Collapsed" Stretch="Uniform"/>
+        
+        <Canvas x:Name="KnobCanvas" 
+                Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                Background="Transparent"
+                MouseLeftButtonDown="KnobCanvas_MouseLeftButtonDown"
+                MouseLeftButtonUp="KnobCanvas_MouseLeftButtonUp"
+                MouseMove="KnobCanvas_MouseMove"
+                MouseLeave="KnobCanvas_MouseLeave">
+            <Canvas.RenderTransform>
+                <RotateTransform x:Name="KnobRotation" Angle="0" CenterX="50" CenterY="50"/>
+            </Canvas.RenderTransform>
+        </Canvas>
+    </Grid>
+</UserControl>
+
